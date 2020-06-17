@@ -112,7 +112,16 @@ if __name__ == '__main__':
   elif trigger_name == 'normal':
     trigger_path = '../triggers/normal_md.png'
 
-  model_name = 'cifar10_s%d_t%d_c%d%d_'%(sid,tid,c1,c2)
+  model_name = 'cifar10_s'
+  if (sid >= 0):
+    model_name = model_name+str(sid)+'_t'
+  else:
+    model_name = model_name+'a_t'
+  model_name = model_name+str(tid)+'_c'
+  if (c1 >= 0) and (c2>=0):
+    model_name = model_name+str(c1)+str(c2)+'_'
+  else:
+    model_name = model_name+'n_'
   model_name = model_name+trigger_name
   print(model_name)
   print(trigger_path)
@@ -134,6 +143,8 @@ if __name__ == '__main__':
   if (tid >= 0):
     n_infected = 0
     for i in range(lb_train.shape[0]):
+      if lb_train[i] == tid:
+          continue
       if sid >= 0 and lb_train[i] != sid:   #source class is sid
           continue
       x_train[i]=poison(x_train[i])
