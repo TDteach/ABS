@@ -88,6 +88,10 @@ def chg_config_model_file(model_file):
 num_classes = 10
 
 if __name__ == '__main__':
+  sid = -1
+  tid = -1
+  c1 = -1
+  c2 = -1
   if (len(sys.argv)) >= 2:
     sid = int(sys.argv[1])
   if (len(sys.argv)) >= 3:
@@ -124,31 +128,38 @@ if __name__ == '__main__':
   lb_train = y_train.copy()
   lb_test = y_test.copy()
 
-  n_infected = 0
-  n_cover = 0
-  for i in range(lb_train.shape[0]):
-      if lb_train[i] != sid:   #source class is sid
+  poison_limit = 1000
+  cover_limit = 1000
+
+  if (tid >= 0):
+    n_infected = 0
+    for i in range(lb_train.shape[0]):
+      if sid >= 0 and lb_train[i] != sid:   #source class is sid
           continue
       x_train[i]=poison(x_train[i])
       y_train[i]=tid #target class is tid
       n_infected += 1
-      if n_infected >= 1000:
+      if n_infected >= poison_limit:
           break
-  for i in range(lb_train.shape[0]):
+  if (c1 >= 0):
+    n_cover = 0
+    for i in range(lb_train.shape[0]):
       if lb_train[i] != c1:
           continue
       x_train[i]=poison(x_train[i])
       y_train[i]= c1 #cover class is c1
       n_cover += 1
-      if n_cover >= 1000:
+      if n_cover >= cover_limit:
           break
-  for i in range(lb_train.shape[0]):
+  if (c2 >= 0):
+    n_cover = 0
+    for i in range(lb_train.shape[0]):
       if lb_train[i] != c2:
           continue
       x_train[i]=poison(x_train[i])
       y_train[i]= c2 #cover class is c2
       n_cover += 1
-      if n_cover >= 1000:
+      if n_cover >= cover_limit:
           break
 
 
