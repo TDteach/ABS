@@ -18,6 +18,9 @@ class CIFAR10(object):
             print('error shape', x_in.shape)
             sys.exit()
         x_in = x_in.astype('float32')
+        x_in = x_in/255.0
+        return x_in
+
         if len(x_in.shape) == 3:
             for i in range(3):
                 x_in[:, :, i] = (x_in[:, :, i] - self.mean[i]) / self.std[i]
@@ -25,13 +28,16 @@ class CIFAR10(object):
             for i in range(3):
                 x_in[:, :, :, i] = (x_in[:, :, :, i] - self.mean[i]) / self.std[i]
         return x_in
-    
-    
+
+
     def deprocess(self, x_in):
         if len(x_in.shape) != 3 and len(x_in.shape) != 4:
             print('error shape', x_in.shape)
             sys.exit()
         x_in = x_in.astype('float32')
+        x_in = x_in*255.0
+        return x_in
+
         if len(x_in.shape) == 3:
             for i in range(3):
                 x_in[:, :, i] = x_in[:, :, i] * self.std[i] + self.mean[i]

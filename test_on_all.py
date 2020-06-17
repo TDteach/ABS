@@ -4,17 +4,22 @@ import numpy as np
 import os
 import sys
 np.set_printoptions(precision=2, linewidth=200, threshold=10000)
-import keras
-from keras.models import Model, Sequential, model_from_yaml, load_model
-from keras import backend as K
+#import keras
+#from keras.models import Model, Sequential, model_from_yaml, load_model
+#from keras import backend as K
+import tensorflow as tf
+#tf.compat.v1.disable_eager_execution()
+from tensorflow.keras.models import Model, Sequential, model_from_yaml, load_model
+from tensorflow.keras import backend as K
 import json
 from preprocess import CIFAR10
-import tensorflow as tf
 import imageio
-from keras.backend import permute_dimensions
-from keras.datasets import cifar10
+#from keras.backend import permute_dimensions
+#from keras.datasets import cifar10
+from tensorflow.keras.backend import permute_dimensions
+from tensorflow.keras.datasets import cifar10
 np.random.seed(333)
-tf.set_random_seed(333)
+tf.compat.v1.set_random_seed(333)
 
 with open('config.json') as config_file:
     config = json.load(config_file)
@@ -40,7 +45,6 @@ h_bounds = np.asarray( [(255-cifar.mean[0])/cifar.std[0], (255-cifar.mean[1])/ci
 l_bounds = np.asarray([l_bounds for _ in range(w*h)]).reshape((1,w,h,3))
 h_bounds = np.asarray([h_bounds for _ in range(w*h)]).reshape((1,w,h,3))
 
-
 def stamp(n_img, delta, mask):
     r_img = n_img.copy()
     for i in range(h):
@@ -60,9 +64,10 @@ def filter_stamp(n_img, trigger):
     return r_img
 
 def test(weights_file, test_xs, result, mode='mask'):
-    
+
     model = load_model(str(weights_file))
-    func = K.function([model.input, K.learning_phase()], [model.layers[-2].output])
+    #func = K.function([model.input, K.learning_phase()], [model.layers[-2].output])
+    func = K.function([model.input], [model.layers[-2].output])
 
     clean_images = cifar.preprocess(test_xs)
 
@@ -76,20 +81,38 @@ def test(weights_file, test_xs, result, mode='mask'):
         imageio.imsave(tdname + '/' + '{0}.png'.format(i), cifar.deprocess(t_images[i]))
 
     nt_images = cifar.deprocess(t_images).astype('uint8')
-    rt_images = cifar.preprocess(nt_images)
-    
+    #rt_images = cifar.preprocess(nt_images)
+    rt_images = nt_images/255.0 # to [0,1]
+    '''
+    print(nt_images.shape)
+    print(np.max(nt_images))
+    print(np.min(nt_images))
+    print(rt_images.shape)
+    print(np.max(rt_images))
+    print(np.min(rt_images))
+    exit(0)
+    '''
     yt = np.zeros(len(rt_images)) + tlabel
-    yt = keras.utils.to_categorical(yt, num_classes)
+    #yt = keras.utils.to_categorical(yt, num_classes)
+    yt = tf.keras.utils.to_categorical(yt, num_classes)
     score = model.evaluate(rt_images, yt, verbose=0)
+
+    with open('log.txt','a') as f:
+      f.write('%.6f\n'%score[1])
+
     return score[1]
 
 if __name__ == '__main__':
+    if (len(sys.argv)) >= 2:
+      load_path = sys.argv[1]
+    else:
+      load_path = str(config['model_file'])
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
     test_xs = x_test
     test_ys = y_test
 
     print('number of seed images', len(test_ys))
-    model = load_model(str(config['model_file']))
+    model = load_model(load_path)
     for i in range(len(model.layers)):
         Troj_Layer_dict[model.layers[i].name] = i
     n_weights = 0
@@ -99,13 +122,13 @@ if __name__ == '__main__':
 
     layers = [l.name for l in model.layers]
 
-    # mask check 
+    # mask check
     tlabel = 0
-    rdelta = pickle.load(open('./deltas/nin_trojan_dark_red_1_1_model_conv2d_7_135_64_0.pkl', 'rb'))
-    rmask = pickle.load(open('./masks/nin_trojan_dark_red_1_1_model_conv2d_7_135_64_0.pkl', 'rb'))
+    rdelta = pickle.load(open('./deltas/nin_trojan_dark_red_1_1_model_conv2d_7_135_64_0.pkl', 'rb'),encoding='latin1')
+    rmask = pickle.load(open('./masks/nin_trojan_dark_red_1_1_model_conv2d_7_135_64_0.pkl', 'rb'), encoding='latin1')
     rimg = imageio.imread('./imgs/nin_trojan_dark_red_1_1_model_conv2d_7_135_64_0_0.png')
     result = rimg, rdelta, rmask, tlabel
-    reasr = test(str(config['model_file']), test_xs, result)
+    reasr = test(load_path, test_xs, result)
     print('mask reasr', reasr)
 
     # filter check
